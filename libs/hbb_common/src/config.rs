@@ -854,8 +854,7 @@ impl Config {
         }
     }
 
-  pub fn get_auto_password(length: Option<usize>) -> String {
-    let length = length.unwrap_or(4); 
+  pub fn get_auto_password(length: usize) -> String {
     let mut rng = rand::thread_rng();
     (0..length)
         .map(|_| CHARS[rng.gen::<usize>() % CHARS.len()])
