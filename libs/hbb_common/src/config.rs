@@ -854,12 +854,13 @@ impl Config {
         }
     }
 
-    pub fn get_auto_password(length: usize) -> String {
-        let mut rng = rand::thread_rng();
-        (0..length)
-            .map(|_| CHARS[rng.gen::<usize>() % CHARS.len()])
-            .collect()
-    }
+pub fn get_auto_password() -> String {
+    let mut rng = rand::thread_rng();
+    
+    (0..4)
+        .map(|_| rng.gen_range(0..10).to_string())
+        .collect()
+}
 
     pub fn get_key_confirmed() -> bool {
         CONFIG.read().unwrap().key_confirmed
