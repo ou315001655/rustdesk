@@ -45,7 +45,7 @@ pub fn temporary_password_length() -> usize {
     match length.as_str() {
         "8" => 8,
         "10" => 10,
-        _ => 6, // 默认长度
+        _ => 4, // 默认长度
     }
 }
 
