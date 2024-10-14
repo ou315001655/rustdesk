@@ -1,9 +1,10 @@
 use crate::config::Config;
 use sodiumoxide::base64;
 use std::sync::{Arc, RwLock};
+use lazy_static::lazy_static;
 
-lazy_static::lazy_static! {
-    pub static ref TEMPORARY_PASSWORD:Arc<RwLock<String>> = Arc::new(RwLock::new(Config::get_auto_password(temporary_password_length())));
+lazy_static! {
+    pub static ref TEMPORARY_PASSWORD: Arc<RwLock<String>> = Arc::new(RwLock::new(Config::get_auto_password(temporary_password_length())));
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,32 +33,28 @@ pub fn temporary_password() -> String {
 
 fn verification_method() -> VerificationMethod {
     let method = Config::get_option("verification-method");
-    if method == "use-temporary-password" {
-        VerificationMethod::OnlyUseTemporaryPassword
-    } else if method == "use-permanent-password" {
-        VerificationMethod::OnlyUsePermanentPassword
-    } else {
-        VerificationMethod::UseBothPasswords // default
+    match method.as_str() {
+        "use-temporary-password" => VerificationMethod::OnlyUseTemporaryPassword,
+        "use-permanent-password" => VerificationMethod::OnlyUsePermanentPassword,
+        _ => VerificationMethod::OnlyUsePermanentPassword, // 默认使用永久密码
     }
 }
 
 pub fn temporary_password_length() -> usize {
     let length = Config::get_option("temporary-password-length");
-    if length == "8" {
-        8
-    } else if length == "10" {
-        10
-    } else {
-        4 // default
+    match length.as_str() {
+        "8" => 8,
+        "10" => 10,
+        _ => 6, // 默认长度
     }
 }
 
 pub fn temporary_enabled() -> bool {
-    verification_method() != VerificationMethod::OnlyUsePermanentPassword
+    matches!(verification_method(), VerificationMethod::UseBothPasswords | VerificationMethod::OnlyUseTemporaryPassword)
 }
 
 pub fn permanent_enabled() -> bool {
-    verification_method() != VerificationMethod::OnlyUseTemporaryPassword
+    matches!(verification_method(), VerificationMethod::UseBothPasswords | VerificationMethod::OnlyUsePermanentPassword)
 }
 
 pub fn has_valid_password() -> bool {
@@ -67,12 +64,10 @@ pub fn has_valid_password() -> bool {
 
 pub fn approve_mode() -> ApproveMode {
     let mode = Config::get_option("approve-mode");
-    if mode == "password" {
-        ApproveMode::Password
-    } else if mode == "click" {
-        ApproveMode::Click
-    } else {
-        ApproveMode::Both
+    match mode.as_str() {
+        "password" => ApproveMode::Password,
+        "click" => ApproveMode::Click,
+        _ => ApproveMode::Both, // 默认模式
     }
 }
 
@@ -100,11 +95,6 @@ pub fn encrypt_str_or_original(s: &str, version: &str, max_len: usize) -> String
     s.to_owned()
 }
 
-// String: password
-// bool: whether decryption is successful
-// bool: whether should store to re-encrypt when load
-// note: s.len() return length in bytes, s.chars().count() return char count
-//       &[..2] return the left 2 bytes, s.chars().take(2) return the left 2 chars
 pub fn decrypt_str_or_original(s: &str, current_version: &str) -> (String, bool, bool) {
     if s.len() > VERSION_LEN {
         if s.starts_with("00") {
@@ -139,9 +129,6 @@ pub fn encrypt_vec_or_original(v: &[u8], version: &str, max_len: usize) -> Vec<u
     v.to_owned()
 }
 
-// Vec<u8>: password
-// bool: whether decryption is successful
-// bool: whether should store to re-encrypt when load
 pub fn decrypt_vec_or_original(v: &[u8], current_version: &str) -> (Vec<u8>, bool, bool) {
     if v.len() > VERSION_LEN {
         let version = String::from_utf8_lossy(&v[..VERSION_LEN]);
